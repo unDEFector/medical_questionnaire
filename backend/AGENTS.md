@@ -56,6 +56,8 @@ PYTHONPATH=backend uv run uvicorn src.main:app --reload
 - Шаблон переменных хранится в `.env.example`.
 - Локальный файл `.env` не коммитим.
 - Новые переменные добавляем одновременно в `.env.example`, конфиг и документацию.
+- Настройки сгруппированы в секции `APP__*`, `DATABASE__*`, `REDIS__*`; `__` — разделитель вложенности `pydantic-settings`. Лишние ключи окружения игнорируются.
+- URL подключений вычисляются в `src/config.py`: PostgreSQL — из `USER_NAME`, `PASSWORD`, `HOST`, `PORT`, `DB_NAME`, Redis — из `HOST`, `PORT`, `DB` соответствующей секции. Готовые URL в окружении не задаются.
 
 ## Миграции
 - Создать миграцию: `PYTHONPATH=backend uv run alembic revision --autogenerate -m "описание"`

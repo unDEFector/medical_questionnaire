@@ -33,7 +33,7 @@ docker compose up --build
 По умолчанию создаются четыре **вымышленных** пациента с демонстрационными результатами. Чтобы начать с пустой базы:
 
 ```bash
-SEED_DEMO_DATA=false docker compose up --build
+APP__SEED_DEMO_DATA=false docker compose up --build
 ```
 
 Данные PostgreSQL и Redis сохраняются в именованных томах. Полное удаление данных выполняется только явно: `docker compose down -v`.
@@ -56,6 +56,15 @@ uv sync --locked
 PYTHONPATH=backend uv run alembic upgrade head
 PYTHONPATH=backend uv run uvicorn src.main:app --reload
 ```
+
+Backend читает `backend/.env` через `pydantic-settings`. Настройки сгруппированы в секции `APP__*`, `DATABASE__*` и `REDIS__*`; двойное подчёркивание задаёт вложенность, а посторонние переменные окружения игнорируются.
+
+URL подключений формируются автоматически из отдельных переменных:
+
+- PostgreSQL: `DATABASE__USER_NAME`, `DATABASE__PASSWORD`, `DATABASE__HOST`, `DATABASE__PORT`, `DATABASE__DB_NAME`;
+- Redis: `REDIS__HOST`, `REDIS__PORT`, `REDIS__DB`.
+
+Например, параметры PostgreSQL собираются в `postgresql+asyncpg://{user_name}:{password}@{host}:{port}/{db_name}`. Флаг демонстрационных данных задаётся через `APP__SEED_DEMO_DATA`. Для Compose переменные подключения можно задать в корневом `.env`; внутри контейнера используются хосты `postgres` и `redis`.
 
 ### Frontend
 

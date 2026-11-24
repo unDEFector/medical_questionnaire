@@ -1,8 +1,8 @@
 import redis.asyncio as redis
 from redis.exceptions import RedisError
-from src.config import get_settings
+from src.config import config
 
-redis_client = redis.from_url(get_settings().redis_url, decode_responses=True)
+redis_client = redis.from_url(config.redis.url, decode_responses=True)
 
 
 async def get_cached(key: str) -> str | None:

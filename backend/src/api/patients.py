@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.cache.client import invalidate_dashboard
-from src.config import get_settings
+from src.config import config
 from src.db.session import get_session
 from src.schemas.patient import PatientCreate, PatientCreated, PatientDetail, PatientListItem, SurveyRead
 from src.services import patients
@@ -32,7 +32,7 @@ async def add_patient(
     baseline = next(survey for survey in detail.surveys if survey.kind.value == "baseline")
     return PatientCreated(
         patient=patients.patient_detail(detail),
-        survey_url=f"{get_settings().frontend_url}/survey/{baseline.token}",
+        survey_url=f"{config.app.frontend_url}/survey/{baseline.token}",
     )
 
 

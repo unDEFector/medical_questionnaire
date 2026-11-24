@@ -2,13 +2,13 @@ services:
   postgres:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: medical_questionnaire
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE__DB_NAME:-medical_questionnaire}
+      POSTGRES_USER: ${DATABASE__USER_NAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d medical_questionnaire"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -31,10 +31,16 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/medical_questionnaire
-      REDIS_URL: redis://redis:6379/0
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      DATABASE__USER_NAME: ${DATABASE__USER_NAME:-postgres}
+      DATABASE__PASSWORD: ${DATABASE__PASSWORD:-postgres}
+      DATABASE__HOST: postgres
+      DATABASE__PORT: 5432
+      DATABASE__DB_NAME: ${DATABASE__DB_NAME:-medical_questionnaire}
+      REDIS__HOST: redis
+      REDIS__PORT: 6379
+      REDIS__DB: ${REDIS__DB:-0}
+      APP__FRONTEND_URL: ${APP__FRONTEND_URL:-http://localhost:3000}
+      APP__SEED_DEMO_DATA: ${APP__SEED_DEMO_DATA:-true}
     ports:
       - "8000:8000"
     depends_on:

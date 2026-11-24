@@ -50,7 +50,9 @@ docker compose up --build
 
 - Frontend: `http://localhost:3000`.
 - Backend: `http://localhost:8000`, Swagger: `/docs`.
-- Демонстрационные вымышленные пациенты включаются переменной `SEED_DEMO_DATA=true` (по умолчанию в Compose).
+- Демонстрационные вымышленные пациенты включаются переменной `APP__SEED_DEMO_DATA=true` (по умолчанию в Compose).
+- Backend использует вложенные настройки с разделителем `__`: секции `APP__*`, `DATABASE__*`, `REDIS__*`. Лишние переменные окружения игнорируются.
+- URL PostgreSQL собирается из `DATABASE__USER_NAME`, `DATABASE__PASSWORD`, `DATABASE__HOST`, `DATABASE__PORT`, `DATABASE__DB_NAME`; URL Redis — из `REDIS__HOST`, `REDIS__PORT`, `REDIS__DB`. Задавать готовые `DATABASE__URL` и `REDIS__URL` не требуется.
 - Шаблоны: `backend/.env.example`, `frontend/.env.example`. Локальные `.env` не коммитить.
 - При добавлении Python-зависимостей обновлять `pyproject.toml` и `uv.lock` через `uv`.
 - Миграции применяются автоматически при запуске backend-контейнера.
