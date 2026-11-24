@@ -1,48 +1,53 @@
-export type RiskLevel = "low" | "moderate" | "high";
+export type UserRole = "doctor" | "patient";
 export type SurveyStatus = "pending" | "completed";
 export type SurveyKind = "baseline" | "followup";
 
+export type User = {
+  public_id: string;
+  role: UserRole;
+  patient_id: string | null;
+};
+
+export type LoginResponse = {
+  access_token: string;
+  token_type: "bearer";
+  expires_at: string;
+  user: User;
+};
+
 export type PatientListItem = {
   id: string;
-  full_name: string;
-  age: number;
-  gender: "female" | "male" | "other";
-  diagnosis: string;
-  therapy: string;
+  public_id: string;
+  medication: string;
   created_at: string;
   survey_count: number;
-  latest_risk: RiskLevel | null;
+  latest_attention: boolean | null;
   latest_survey_at: string | null;
   next_survey_at: string | null;
 };
 
 export type Dashboard = {
   patient_count: number;
-  high_risk_count: number;
+  attention_count: number;
   pending_count: number;
   completed_count: number;
   recent_patients: PatientListItem[];
 };
 
 export type PatientInput = {
-  full_name: string;
-  birth_date: string;
-  gender: "female" | "male" | "other";
-  diagnosis: string;
-  therapy: string;
   height_cm: number;
   initial_weight_kg: number;
+  medication: string;
+  first_dose_date?: string;
+  starting_dose?: number;
 };
 
-export type SurveyAnswer = { question_key: string; value: number };
+export type SurveyAnswer = { question_key: string; value: number | null; text_value: string };
 
 export type Survey = {
   id: string;
   kind: SurveyKind;
   status: SurveyStatus;
-  token: string;
-  risk_level: RiskLevel | null;
-  risk_score: number | null;
   weight_kg: number | null;
   weight_change_percent: number;
   wellbeing_note: string;
@@ -50,68 +55,69 @@ export type Survey = {
   created_at: string;
   completed_at: string | null;
   answers: SurveyAnswer[];
+  red_flags: string[];
 };
 
 export type TrendPoint = {
   survey_id: string;
   date: string;
   kind: SurveyKind;
-  risk_score: number;
   weight_kg: number;
   weight_change_percent: number;
-  symptom_scores: Record<string, number>;
 };
 
 export type PatientDetail = {
   id: string;
-  full_name: string;
-  age: number;
-  birth_date: string;
-  gender: "female" | "male" | "other";
-  diagnosis: string;
-  therapy: string;
+  public_id: string;
   height_cm: number;
   initial_weight_kg: number;
+  bmi: number;
+  medication: string;
+  first_dose_date: string | null;
+  starting_dose: number | null;
   created_at: string;
   surveys: Survey[];
   trends: TrendPoint[];
-  current_risk: RiskLevel | null;
-  current_recommendations: string[];
+  current_red_flags: string[];
 };
 
-export type PatientCreated = { patient: PatientDetail; survey_url: string };
-
-export type RiskResult = {
-  level: RiskLevel;
-  score: number;
-  weight_change_percent: number;
-  title: string;
-  patient_message: string;
-  recommendations: string[];
-};
+export type PatientCredentials = { public_id: string; password: string };
+export type PatientCreated = { patient: PatientDetail; credentials: PatientCredentials };
 
 export type QuestionOption = { value: number; label: string };
 export type SurveyQuestion = {
   key: string;
+  section: string;
   title: string;
-  description: string;
+  kind: "scale" | "choice" | "boolean" | "text";
   options: QuestionOption[];
+  detail_label: string | null;
+  respondent: UserRole;
+  required: boolean;
 };
 
-export type PublicSurvey = {
+export type SurveyDetail = {
   id: string;
-  patient_name: string;
+  patient_public_id: string;
   kind: SurveyKind;
   status: SurveyStatus;
   due_date: string | null;
   baseline_weight_kg: number;
   questions: SurveyQuestion[];
-  result: RiskResult | null;
+  answers: SurveyAnswer[];
+  red_flags: string[];
+};
+
+export type SurveyPayload = {
+  answers: Record<string, number | string>;
+  details: Record<string, string>;
+  current_weight_kg?: number;
+  wellbeing_note: string;
 };
 
 export type SurveySubmitted = {
   survey_id: string;
   status: SurveyStatus;
   completed_at: string;
-  result: RiskResult;
+  red_flags: string[];
 };

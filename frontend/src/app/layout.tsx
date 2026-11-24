@@ -5,7 +5,7 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: { default: "инКлира — мониторинг пациентов", template: "%s | инКлира" },
-  description: "Медицинские опросы и контроль нутритивного риска",
+  description: "Медицинские опросы пациентов и контроль терапии",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

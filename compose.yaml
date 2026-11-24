@@ -41,6 +41,9 @@ services:
       REDIS__DB: ${REDIS__DB:-0}
       APP__FRONTEND_URL: ${APP__FRONTEND_URL:-http://localhost:3000}
       APP__SEED_DEMO_DATA: ${APP__SEED_DEMO_DATA:-true}
+      AUTH__SESSION_TTL_HOURS: ${AUTH__SESSION_TTL_HOURS:-24}
+      AUTH__DOCTOR_ID: ${AUTH__DOCTOR_ID:-D-000001}
+      AUTH__DOCTOR_PASSWORD: ${AUTH__DOCTOR_PASSWORD:-doctor-demo-password}
     ports:
       - "8000:8000"
     depends_on:

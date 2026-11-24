@@ -10,13 +10,11 @@ import { Modal } from "@/components/ui/Modal";
 import { Icon } from "@/components/ui/Icon";
 
 const initialForm: PatientInput = {
-  full_name: "",
-  birth_date: "",
-  gender: "female",
-  diagnosis: "",
-  therapy: "",
   height_cm: 165,
   initial_weight_kg: 70,
+  medication: "Семаглутид",
+  first_dose_date: "",
+  starting_dose: 0.5,
 };
 
 export function NewPatientModal() {
@@ -26,7 +24,12 @@ export function NewPatientModal() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: api.createPatient,
+    mutationFn: (data: PatientInput) =>
+      api.createPatient({
+        ...data,
+        first_dose_date: data.first_dose_date || undefined,
+        starting_dose: data.starting_dose || undefined,
+      }),
     onSuccess: async (data) => {
       setCreated(data);
       await queryClient.invalidateQueries({ queryKey: ["patients"] });
@@ -43,14 +46,11 @@ export function NewPatientModal() {
     }, 200);
   }
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    mutation.mutate(form);
-  }
-
-  async function copyLink() {
+  async function copyCredentials() {
     if (!created) return;
-    await navigator.clipboard.writeText(created.survey_url);
+    await navigator.clipboard.writeText(
+      `ID: ${created.credentials.public_id}\nПароль: ${created.credentials.password}`,
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -59,140 +59,106 @@ export function NewPatientModal() {
     <Modal
       open={patientModalOpen}
       onClose={close}
-      title={created ? "Пациент добавлен" : "Новый пациент"}
+      title={created ? "Учётная запись пациента создана" : "Новый пациент"}
       wide
     >
       {created ? (
-        <div className="text-center">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-            <Icon name="check" className="h-8 w-8" />
-          </span>
-          <h3 className="mt-4 text-lg font-bold">{created.patient.full_name}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Исходная анкета создана. Отправьте пациенту персональную ссылку.
-          </p>
-          <div className="mt-5 flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-left">
-            <span className="min-w-0 flex-1 truncate text-xs text-slate-500">
-              {created.survey_url}
+        <div>
+          <div className="text-center">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Icon name="check" className="h-8 w-8" />
             </span>
-            <Button variant="secondary" onClick={copyLink} className="shrink-0">
-              <Icon name={copied ? "check" : "copy"} className="h-4 w-4" />
-              {copied ? "Скопировано" : "Копировать"}
-            </Button>
+            <h3 className="mt-4 text-lg font-bold">Пациент {created.patient.public_id}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Передайте пациенту ID и пароль. После закрытия окна пароль снова не отображается.
+            </p>
           </div>
-          <Button onClick={close} className="mt-6 w-full">
+          <dl className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4">
+            <div className="flex justify-between gap-4">
+              <dt className="text-sm text-slate-500">ID</dt>
+              <dd className="font-mono text-sm font-bold text-navy">
+                {created.credentials.public_id}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-sm text-slate-500">Временный пароль</dt>
+              <dd className="break-all font-mono text-sm font-bold text-navy">
+                {created.credentials.password}
+              </dd>
+            </div>
+          </dl>
+          <Button variant="secondary" onClick={copyCredentials} className="mt-4 w-full">
+            <Icon name={copied ? "check" : "copy"} className="h-4 w-4" />
+            {copied ? "Скопировано" : "Скопировать ID и пароль"}
+          </Button>
+          <Button onClick={close} className="mt-3 w-full">
             Готово
           </Button>
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-4">
+        <form
+          onSubmit={(event: FormEvent) => {
+            event.preventDefault();
+            mutation.mutate(form);
+          }}
+          className="space-y-4"
+        >
+          <p className="rounded-xl bg-brand-50 p-3 text-sm leading-6 text-brand-800">
+            ФИО, телефон и дата рождения не запрашиваются. Пациент будет идентифицироваться только
+            по ID.
+          </p>
           <div>
-            <label htmlFor="full_name" className="label">
-              Фамилия, имя и отчество
+            <label htmlFor="medication" className="label">
+              Препарат
             </label>
-            <input
-              id="full_name"
+            <select
+              id="medication"
               className="field"
-              required
-              minLength={2}
-              value={form.full_name}
-              onChange={(event) => setForm({ ...form, full_name: event.target.value })}
-              placeholder="Например, Анна Смирнова"
-            />
+              value={form.medication}
+              onChange={(event) => setForm({ ...form, medication: event.target.value })}
+            >
+              <option value="Семаглутид">Семаглутид</option>
+              <option value="Тирзепатид">Тирзепатид</option>
+              <option value="Другой препарат">Другой препарат</option>
+            </select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            <NumberField
+              id="height_cm"
+              label="Рост, см"
+              min={51}
+              max={250}
+              value={form.height_cm}
+              onChange={(height_cm) => setForm({ ...form, height_cm })}
+            />
+            <NumberField
+              id="initial_weight_kg"
+              label="Исходный вес, кг"
+              min={21}
+              max={500}
+              value={form.initial_weight_kg}
+              onChange={(initial_weight_kg) => setForm({ ...form, initial_weight_kg })}
+            />
             <div>
-              <label htmlFor="birth_date" className="label">
-                Дата рождения
+              <label htmlFor="first_dose_date" className="label">
+                Дата первой дозы <span className="font-normal text-slate-400">(планируемая)</span>
               </label>
               <input
-                id="birth_date"
+                id="first_dose_date"
                 type="date"
                 className="field"
-                required
-                max={new Date().toISOString().slice(0, 10)}
-                value={form.birth_date}
-                onChange={(event) => setForm({ ...form, birth_date: event.target.value })}
+                value={form.first_dose_date}
+                onChange={(event) => setForm({ ...form, first_dose_date: event.target.value })}
               />
             </div>
-            <div>
-              <label htmlFor="gender" className="label">
-                Пол
-              </label>
-              <select
-                id="gender"
-                className="field"
-                value={form.gender}
-                onChange={(event) =>
-                  setForm({ ...form, gender: event.target.value as PatientInput["gender"] })
-                }
-              >
-                <option value="female">Женский</option>
-                <option value="male">Мужской</option>
-                <option value="other">Другой</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label htmlFor="diagnosis" className="label">
-              Основной диагноз
-            </label>
-            <input
-              id="diagnosis"
-              className="field"
-              required
-              value={form.diagnosis}
-              onChange={(event) => setForm({ ...form, diagnosis: event.target.value })}
-              placeholder="Диагноз по медицинской карте"
+            <NumberField
+              id="starting_dose"
+              label="Стартовая доза"
+              min={0.001}
+              max={1000}
+              value={form.starting_dose ?? 0.5}
+              onChange={(starting_dose) => setForm({ ...form, starting_dose })}
             />
-          </div>
-          <div>
-            <label htmlFor="therapy" className="label">
-              Текущая терапия
-            </label>
-            <input
-              id="therapy"
-              className="field"
-              value={form.therapy}
-              onChange={(event) => setForm({ ...form, therapy: event.target.value })}
-              placeholder="Препараты и дозировки"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="height_cm" className="label">
-                Рост, см
-              </label>
-              <input
-                id="height_cm"
-                type="number"
-                className="field"
-                min={51}
-                max={250}
-                step="0.1"
-                required
-                value={form.height_cm}
-                onChange={(event) => setForm({ ...form, height_cm: Number(event.target.value) })}
-              />
-            </div>
-            <div>
-              <label htmlFor="initial_weight_kg" className="label">
-                Исходный вес, кг
-              </label>
-              <input
-                id="initial_weight_kg"
-                type="number"
-                className="field"
-                min={21}
-                max={500}
-                step="0.1"
-                required
-                value={form.initial_weight_kg}
-                onChange={(event) =>
-                  setForm({ ...form, initial_weight_kg: Number(event.target.value) })
-                }
-              />
-            </div>
           </div>
           {mutation.error && (
             <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
@@ -206,11 +172,46 @@ export function NewPatientModal() {
               Отмена
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Сохранение…" : "Создать и получить ссылку"}
+              {mutation.isPending ? "Создание…" : "Создать ID и пароль"}
             </Button>
           </div>
         </form>
       )}
     </Modal>
+  );
+}
+
+function NumberField({
+  id,
+  label,
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="number"
+        className="field"
+        min={min}
+        max={max}
+        step="0.1"
+        required
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </div>
   );
 }

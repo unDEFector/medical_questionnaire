@@ -15,6 +15,12 @@ class AppConfig(_Section):
     seed_demo_data: bool = False
 
 
+class AuthConfig(_Section):
+    session_ttl_hours: int = 24
+    doctor_id: str = "D-000001"
+    doctor_password: str = "doctor-demo-password"
+
+
 class DatabaseConfig(_Section):
     user_name: str = "postgres"
     password: str = "postgres"
@@ -41,6 +47,7 @@ class RedisConfig(_Section):
 
 class BaseConfig(BaseSettings):
     app: AppConfig = AppConfig()
+    auth: AuthConfig = AuthConfig()
     database: DatabaseConfig = DatabaseConfig()
     redis: RedisConfig = RedisConfig()
 

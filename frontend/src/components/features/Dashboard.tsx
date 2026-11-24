@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Loading, ErrorState } from "@/components/ui/Loading";
@@ -14,6 +14,7 @@ import { NewPatientModal } from "./NewPatientModal";
 export function Dashboard() {
   const [search, setSearch] = useState("");
   const { setPatientModalOpen } = useAppStore();
+  const user = useAuthStore((state) => state.user);
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard });
   const patients = useQuery({
     queryKey: ["patients", search],
@@ -35,11 +36,11 @@ export function Dashboard() {
       note: "Под наблюдением",
     },
     {
-      label: "Высокий риск",
-      value: dashboard.data?.high_risk_count ?? 0,
+      label: "Есть red flags",
+      value: dashboard.data?.attention_count ?? 0,
       icon: "heart",
       color: "bg-red-50 text-red-600",
-      note: "Требуют внимания",
+      note: "По последней анкете",
     },
     {
       label: "Ожидают опроса",
@@ -61,7 +62,7 @@ export function Dashboard() {
     <div className="mx-auto max-w-[1440px]">
       <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p className="mb-1 text-sm text-slate-400">Добрый день, Александра</p>
+          <p className="mb-1 text-sm text-slate-400">Кабинет врача · {user?.public_id}</p>
           <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">
             Обзор пациентов
           </h1>
@@ -97,7 +98,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {!!dashboard.data?.high_risk_count && (
+      {!!dashboard.data?.attention_count && (
         <section
           id="recommendations"
           className="mt-6 flex flex-col gap-4 rounded-2xl border border-red-100 bg-red-50 p-5 sm:flex-row sm:items-center"
@@ -106,15 +107,13 @@ export function Dashboard() {
             <Icon name="bell" />
           </span>
           <div className="flex-1">
-            <h2 className="font-semibold text-red-900">
-              Есть пациенты с высоким нутритивным риском
-            </h2>
+            <h2 className="font-semibold text-red-900">В анкетах отмечены red flags</h2>
             <p className="mt-1 text-sm text-red-700">
-              Просмотрите результаты и оцените необходимость внеочередного приёма.
+              Просмотрите ответы и оцените необходимость связаться с пациентом.
             </p>
           </div>
           <span className="text-sm font-semibold text-red-800">
-            {dashboard.data.high_risk_count} пациент(а)
+            {dashboard.data.attention_count} пациент(а)
           </span>
         </section>
       )}
@@ -123,16 +122,18 @@ export function Dashboard() {
         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold">Пациенты</h2>
-            <p className="mt-1 text-xs text-slate-400">Актуальные результаты и план наблюдения</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Обезличенные карточки и результаты опросов
+            </p>
           </div>
           <label className="relative block sm:w-72">
-            <span className="sr-only">Поиск пациента</span>
+            <span className="sr-only">Поиск пациента по ID</span>
             <Icon name="search" className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="field py-2.5 pl-9"
-              placeholder="Поиск по имени"
+              placeholder="Например, P-100001"
             />
           </label>
         </div>
@@ -148,46 +149,32 @@ export function Dashboard() {
       </section>
 
       <section id="surveys" className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="card p-6">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-brand-50 p-3 text-brand-600">
-              <Icon name="calendar" />
-            </span>
-            <div>
-              <h2 className="font-bold">Контроль через 3 месяца</h2>
-              <p className="text-xs text-slate-400">Автоматический план наблюдения</p>
-            </div>
-          </div>
-          <p className="mt-4 text-sm leading-6 text-slate-500">
-            После каждой анкеты система создаёт следующий контрольный опрос и сохраняет дату в
-            карточке пациента.
-          </p>
-        </div>
-        <div className="card p-6">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-violet-50 p-3 text-violet-600">
-              <Icon name="chart" />
-            </span>
-            <div>
-              <h2 className="font-bold">Динамика показателей</h2>
-              <p className="text-xs text-slate-400">Наглядная история состояния</p>
-            </div>
-          </div>
-          <p className="mt-4 text-sm leading-6 text-slate-500">
-            Откройте карточку пациента, чтобы сравнить массу тела, выраженность симптомов и группу
-            риска.
-          </p>
-          {dashboard.data?.recent_patients[0] && (
-            <Link
-              className="mt-3 inline-block text-sm font-semibold text-brand-600"
-              href={`/patients/${dashboard.data.recent_patients[0].id}`}
-            >
-              Посмотреть пример →
-            </Link>
-          )}
-        </div>
+        <InfoCard
+          icon="calendar"
+          title="Контроль через 3 месяца"
+          text="После каждой анкеты система создаёт следующий контрольный опрос и сохраняет дату в карточке пациента."
+        />
+        <InfoCard
+          icon="settings"
+          title="Учётные данные пациента"
+          text="При создании карточки система генерирует ID и временный пароль. Передайте их пациенту лично по защищённому каналу."
+        />
       </section>
       <NewPatientModal />
+    </div>
+  );
+}
+
+function InfoCard({ icon, title, text }: { icon: IconName; title: string; text: string }) {
+  return (
+    <div className="card p-6">
+      <div className="flex items-center gap-3">
+        <span className="rounded-xl bg-brand-50 p-3 text-brand-600">
+          <Icon name={icon} />
+        </span>
+        <h2 className="font-bold">{title}</h2>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-500">{text}</p>
     </div>
   );
 }

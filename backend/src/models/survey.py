@@ -1,5 +1,4 @@
 import enum
-import secrets
 import uuid
 from datetime import datetime
 
@@ -7,6 +6,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstr
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 from src.db.base import Base
+from src.services.questionnaire import RED_FLAG_KEYS
 
 
 class SurveyKind(enum.StrEnum):
@@ -19,12 +19,6 @@ class SurveyStatus(enum.StrEnum):
     completed = "completed"
 
 
-class RiskLevel(enum.StrEnum):
-    low = "low"
-    moderate = "moderate"
-    high = "high"
-
-
 class Survey(Base):
     __tablename__ = "surveys"
 
@@ -32,9 +26,6 @@ class Survey(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("patients.id", ondelete="CASCADE"))
     kind: Mapped[SurveyKind] = mapped_column(default=SurveyKind.baseline)
     status: Mapped[SurveyStatus] = mapped_column(default=SurveyStatus.pending, index=True)
-    token: Mapped[str] = mapped_column(String(64), unique=True, default=lambda: secrets.token_urlsafe(24))
-    risk_level: Mapped[RiskLevel | None] = mapped_column(default=None)
-    risk_score: Mapped[int | None] = mapped_column(default=None)
     weight_kg: Mapped[float | None] = mapped_column(default=None)
     weight_change_percent: Mapped[float] = mapped_column(default=0)
     wellbeing_note: Mapped[str] = mapped_column(Text, default="")
@@ -46,7 +37,16 @@ class Survey(Base):
     answers: Mapped[list["SurveyAnswer"]] = relationship(
         back_populates="survey",
         cascade="all, delete-orphan",
+        order_by="SurveyAnswer.id",
     )
+
+    @property
+    def red_flags(self) -> list[str]:
+        return sorted(
+            answer.question_key
+            for answer in self.answers
+            if answer.question_key in RED_FLAG_KEYS and answer.value == 1
+        )
 
 
 class SurveyAnswer(Base):
@@ -56,7 +56,8 @@ class SurveyAnswer(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     survey_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"))
     question_key: Mapped[str] = mapped_column(String(40))
-    value: Mapped[int] = mapped_column(Integer)
+    value: Mapped[int | None] = mapped_column(Integer, default=None)
+    text_value: Mapped[str] = mapped_column(Text, default="")
 
     survey: Mapped[Survey] = relationship(back_populates="answers")
 
