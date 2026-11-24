@@ -49,7 +49,7 @@ export function PatientDetailView() {
   return (
     <div className="mx-auto max-w-6xl">
       <Link
-        href="/"
+        href="/patients"
         className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-brand-600"
       >
         <Icon name="arrow-left" className="h-4 w-4" />

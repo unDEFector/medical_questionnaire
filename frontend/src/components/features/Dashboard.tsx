@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -12,14 +12,9 @@ import { PatientTable } from "./PatientTable";
 import { NewPatientModal } from "./NewPatientModal";
 
 export function Dashboard() {
-  const [search, setSearch] = useState("");
   const { setPatientModalOpen } = useAppStore();
   const user = useAuthStore((state) => state.user);
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard });
-  const patients = useQuery({
-    queryKey: ["patients", search],
-    queryFn: () => api.patients(search),
-  });
 
   const stats: Array<{
     label: string;
@@ -63,9 +58,8 @@ export function Dashboard() {
       <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p className="mb-1 text-sm text-slate-400">Кабинет врача · {user?.public_id}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">
-            Обзор пациентов
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">Обзор</h1>
+          <p className="mt-2 text-sm text-slate-500">Основные показатели наблюдения пациентов</p>
         </div>
         <Button onClick={() => setPatientModalOpen(true)}>
           <Icon name="plus" />
@@ -76,90 +70,76 @@ export function Dashboard() {
       {dashboard.error ? (
         <ErrorState message={dashboard.error.message} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="card p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">{stat.label}</p>
-                  <p className="mt-2 text-3xl font-bold text-navy">
-                    {dashboard.isLoading ? "—" : stat.value}
-                  </p>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="card p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">{stat.label}</p>
+                    <p className="mt-2 text-3xl font-bold text-navy">
+                      {dashboard.isLoading ? "—" : stat.value}
+                    </p>
+                  </div>
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.color}`}
+                  >
+                    <Icon name={stat.icon} />
+                  </span>
                 </div>
-                <span
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.color}`}
-                >
-                  <Icon name={stat.icon} />
-                </span>
+                <p className="mt-3 text-xs text-slate-400">{stat.note}</p>
               </div>
-              <p className="mt-3 text-xs text-slate-400">{stat.note}</p>
+            ))}
+          </div>
+
+          {!!dashboard.data?.attention_count && (
+            <section className="mt-6 flex flex-col gap-4 rounded-2xl border border-red-100 bg-red-50 p-5 sm:flex-row sm:items-center">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Icon name="bell" />
+              </span>
+              <div className="flex-1">
+                <h2 className="font-semibold text-red-900">В анкетах отмечены red flags</h2>
+                <p className="mt-1 text-sm text-red-700">
+                  {dashboard.data.attention_count} пациент(а) требуют клинической оценки ответов.
+                </p>
+              </div>
+              <Link href="/red-flags" className="text-sm font-semibold text-red-800 hover:underline">
+                Открыть раздел →
+              </Link>
+            </section>
+          )}
+
+          <section className="card mt-6 overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 p-5">
+              <div>
+                <h2 className="text-lg font-bold">Недавние пациенты</h2>
+                <p className="mt-1 text-xs text-slate-400">Последние добавленные карточки</p>
+              </div>
+              <Link href="/patients" className="text-sm font-semibold text-brand-600 hover:underline">
+                Все пациенты
+              </Link>
             </div>
-          ))}
-        </div>
-      )}
+            {dashboard.isLoading ? (
+              <Loading label="Загружаем список пациентов" />
+            ) : (
+              <PatientTable patients={dashboard.data?.recent_patients ?? []} />
+            )}
+          </section>
 
-      {!!dashboard.data?.attention_count && (
-        <section
-          id="recommendations"
-          className="mt-6 flex flex-col gap-4 rounded-2xl border border-red-100 bg-red-50 p-5 sm:flex-row sm:items-center"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-            <Icon name="bell" />
-          </span>
-          <div className="flex-1">
-            <h2 className="font-semibold text-red-900">В анкетах отмечены red flags</h2>
-            <p className="mt-1 text-sm text-red-700">
-              Просмотрите ответы и оцените необходимость связаться с пациентом.
-            </p>
-          </div>
-          <span className="text-sm font-semibold text-red-800">
-            {dashboard.data.attention_count} пациент(а)
-          </span>
-        </section>
-      )}
-
-      <section id="patients" className="card mt-6 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Пациенты</h2>
-            <p className="mt-1 text-xs text-slate-400">
-              Обезличенные карточки и результаты опросов
-            </p>
-          </div>
-          <label className="relative block sm:w-72">
-            <span className="sr-only">Поиск пациента по ID</span>
-            <Icon name="search" className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="field py-2.5 pl-9"
-              placeholder="Например, P-100001"
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
+            <InfoCard
+              icon="calendar"
+              title="Контроль через 3 месяца"
+              text="После каждой анкеты система создаёт следующий контрольный опрос и сохраняет дату в карточке пациента."
             />
-          </label>
-        </div>
-        {patients.isLoading ? (
-          <Loading label="Загружаем список пациентов" />
-        ) : patients.error ? (
-          <div className="p-5">
-            <ErrorState message={patients.error.message} />
-          </div>
-        ) : (
-          <PatientTable patients={patients.data ?? []} />
-        )}
-      </section>
-
-      <section id="surveys" className="mt-6 grid gap-4 md:grid-cols-2">
-        <InfoCard
-          icon="calendar"
-          title="Контроль через 3 месяца"
-          text="После каждой анкеты система создаёт следующий контрольный опрос и сохраняет дату в карточке пациента."
-        />
-        <InfoCard
-          icon="settings"
-          title="Учётные данные пациента"
-          text="При создании карточки система генерирует ID и временный пароль. Передайте их пациенту лично по защищённому каналу."
-        />
-      </section>
+            <InfoCard
+              icon="settings"
+              title="Учётные данные пациента"
+              text="При создании карточки система генерирует ID и временный пароль. Передайте их пациенту лично по защищённому каналу."
+            />
+          </section>
+        </>
+      )}
       <NewPatientModal />
     </div>
   );

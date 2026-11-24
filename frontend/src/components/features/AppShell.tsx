@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/Button";
 
 const doctorNavigation: Array<{ label: string; icon: IconName; href: string }> = [
   { label: "Обзор", icon: "chart", href: "/" },
-  { label: "Пациенты", icon: "users", href: "/#patients" },
-  { label: "Опросники", icon: "clipboard", href: "/#surveys" },
-  { label: "Red flags", icon: "heart", href: "/#recommendations" },
+  { label: "Пациенты", icon: "users", href: "/patients" },
+  { label: "Опросник", icon: "clipboard", href: "/surveys" },
+  { label: "Red flags", icon: "heart", href: "/red-flags" },
 ];
 const patientNavigation: Array<{ label: string; icon: IconName; href: string }> = [
   { label: "Мои опросы", icon: "clipboard", href: "/" },
@@ -61,20 +61,31 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav aria-label="Основная навигация" className="space-y-2">
-          {navigation.map((item, index) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={() => setMobileNavigationOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white",
-                index === 0 && pathname === "/" && "bg-brand-500 text-white",
-              )}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </Link>
-          ))}
+          {navigation.map((item, index) => {
+            const active =
+              user?.role === "doctor"
+                ? item.href === "/"
+                  ? pathname === "/"
+                  : item.href === "/surveys"
+                    ? pathname.startsWith("/surveys") || pathname.startsWith("/survey/")
+                    : pathname.startsWith(item.href)
+                : index === 0 && pathname === "/";
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileNavigationOpen(false)}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white",
+                  active && "bg-brand-500 text-white",
+                )}
+              >
+                <Icon name={item.icon} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="mt-auto rounded-2xl bg-white/10 p-4">
           <Icon name="settings" className="mb-3 text-cyan-300" />

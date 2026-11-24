@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from src.db.session import SessionFactory
 from src.models.patient import Patient
 from src.models.survey import Survey, SurveyAnswer, SurveyKind, SurveyStatus
@@ -26,15 +26,20 @@ def demo_answers(kind: str, attention: bool = False) -> list[SurveyAnswer]:
 
 async def seed_demo_data() -> None:
     async with SessionFactory() as session:
-        if await session.scalar(select(func.count(Patient.id))):
-            return
         now = datetime.now(UTC)
         examples = (
             ("P-100001", "Семаглутид", 168, 86.4, 1.0, True),
             ("P-100002", "Тирзепатид", 176, 74.8, 2.5, False),
             ("P-100003", "Семаглутид", 164, 62.3, 0.5, False),
         )
+        existing_ids = set(
+            await session.scalars(
+                select(User.public_id).where(User.public_id.in_(example[0] for example in examples))
+            )
+        )
         for index, (public_id, medication, height, weight, dose, attention) in enumerate(examples):
+            if public_id in existing_ids:
+                continue
             user = User(
                 public_id=public_id,
                 password_hash=hash_password(DEMO_PATIENT_PASSWORD),
