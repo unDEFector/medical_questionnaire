@@ -1,0 +1,14 @@
+.git
+.idea
+.venv
+.ruff_cache
+.pytest_cache
+**/__pycache__
+**/*.pyc
+.env
+**/.env
+frontend/node_modules
+frontend/.next
+frontend/coverage
+backend/tests
+img1.jpg

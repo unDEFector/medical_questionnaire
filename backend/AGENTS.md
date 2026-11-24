@@ -43,13 +43,13 @@ cp .env.example .env
 docker compose up -d
 
 # Установить зависимости
-uv add
+uv sync --locked
 
 # Применить миграции
-uv run alembic upgrade head
+PYTHONPATH=backend uv run alembic upgrade head
 
 # Запустить сервер разработки
-uv run uvicorn src.main:app --reload
+PYTHONPATH=backend uv run uvicorn src.main:app --reload
 ```
 
 ## Переменные окружения
@@ -58,9 +58,9 @@ uv run uvicorn src.main:app --reload
 - Новые переменные добавляем одновременно в `.env.example`, конфиг и документацию.
 
 ## Миграции
-- Создать миграцию: `uv run alembic revision --autogenerate -m "описание"`
-- Применить миграции: `uv run alembic upgrade head`
-- Откатить последнюю миграцию: `uv run alembic downgrade -1`
+- Создать миграцию: `PYTHONPATH=backend uv run alembic revision --autogenerate -m "описание"`
+- Применить миграции: `PYTHONPATH=backend uv run alembic upgrade head`
+- Откатить последнюю миграцию: `PYTHONPATH=backend uv run alembic downgrade -1`
 - Не редактируй уже примененные миграции без явного запроса. Для изменений создавай новую миграцию.
 
 ## Стиль кода
