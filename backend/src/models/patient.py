@@ -12,6 +12,9 @@ class Patient(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    doctor_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
     height_cm: Mapped[float]
     initial_weight_kg: Mapped[float]
     medication: Mapped[str] = mapped_column(String(120), default="")
@@ -19,7 +22,8 @@ class Patient(Base):
     starting_dose: Mapped[float | None] = mapped_column(default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="patient")
+    user: Mapped["User"] = relationship(back_populates="patient", foreign_keys="Patient.user_id")
+    doctor: Mapped["User | None"] = relationship(back_populates="patients", foreign_keys="Patient.doctor_id")
     surveys: Mapped[list["Survey"]] = relationship(
         back_populates="patient",
         cascade="all, delete-orphan",

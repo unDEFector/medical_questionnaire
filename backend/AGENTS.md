@@ -58,7 +58,7 @@ PYTHONPATH=backend uv run uvicorn src.main:app --reload
 - Локальный файл `.env` не коммитим.
 - Новые переменные добавляем одновременно в `.env.example`, конфиг и документацию.
 - Настройки сгруппированы в секции `APP__*`, `AUTH__*`, `DATABASE__*`, `REDIS__*`; `__` — разделитель вложенности `pydantic-settings`. Лишние ключи окружения игнорируются.
-- `AUTH__DOCTOR_ID` и `AUTH__DOCTOR_PASSWORD` задают первую учётную запись врача; `AUTH__SESSION_TTL_HOURS` — срок серверной сессии.
+- `AUTH__ADMIN_ID` и `AUTH__ADMIN_PASSWORD` задают первичную учётную запись администратора; `AUTH__DOCTOR_ID` и `AUTH__DOCTOR_PASSWORD` — первого врача при `AUTH__BOOTSTRAP_DOCTOR_ENABLED=true`; `AUTH__SESSION_TTL_HOURS` — срок серверной сессии.
 - URL подключений вычисляются в `src/config.py`: PostgreSQL — из `USER_NAME`, `PASSWORD`, `HOST`, `PORT`, `DB_NAME`, Redis — из `HOST`, `PORT`, `DB` соответствующей секции. Готовые URL в окружении не задаются.
 
 ## Миграции

@@ -10,10 +10,11 @@ router = APIRouter(tags=["Обзор"])
 
 
 @router.get("/dashboard", response_model=DashboardRead)
-async def read_dashboard(_: DoctorUser, session: AsyncSession = Depends(get_session)) -> DashboardRead:
-    cached = await get_cached("dashboard:v2")
+async def read_dashboard(user: DoctorUser, session: AsyncSession = Depends(get_session)) -> DashboardRead:
+    cache_key = f"dashboard:v3:{user.id}"
+    cached = await get_cached(cache_key)
     if cached:
         return DashboardRead.model_validate_json(cached)
-    dashboard = await build_dashboard(session)
-    await set_cached("dashboard:v2", dashboard.model_dump_json())
+    dashboard = await build_dashboard(session, doctor_id=user.id)
+    await set_cached(cache_key, dashboard.model_dump_json())
     return dashboard

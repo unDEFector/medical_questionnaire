@@ -103,7 +103,10 @@ export function Dashboard() {
                   {dashboard.data.attention_count} пациент(а) требуют клинической оценки ответов.
                 </p>
               </div>
-              <Link href="/red-flags" className="text-sm font-semibold text-red-800 hover:underline">
+              <Link
+                href="/red-flags"
+                className="text-sm font-semibold text-red-800 hover:underline"
+              >
                 Открыть раздел →
               </Link>
             </section>
@@ -115,7 +118,10 @@ export function Dashboard() {
                 <h2 className="text-lg font-bold">Недавние пациенты</h2>
                 <p className="mt-1 text-xs text-slate-400">Последние добавленные карточки</p>
               </div>
-              <Link href="/patients" className="text-sm font-semibold text-brand-600 hover:underline">
+              <Link
+                href="/patients"
+                className="text-sm font-semibold text-brand-600 hover:underline"
+              >
                 Все пациенты
               </Link>
             </div>

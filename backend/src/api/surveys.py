@@ -16,6 +16,8 @@ router = APIRouter(prefix="/surveys", tags=["Анкеты"])
 def check_survey_access(survey: Survey, user: User) -> None:
     if user.role == UserRole.patient and (user.patient is None or survey.patient_id != user.patient.id):
         raise HTTPException(status_code=404, detail="Анкета не найдена")
+    if user.role == UserRole.doctor and survey.patient.doctor_id != user.id:
+        raise HTTPException(status_code=404, detail="Анкета не найдена")
 
 
 @router.get("/{survey_id}", response_model=SurveyDetail)
@@ -66,11 +68,12 @@ async def submit_survey(
 async def update_clinical_answers(
     survey_id: uuid.UUID,
     data: ClinicalAnswersUpdate,
-    _: DoctorUser,
+    user: DoctorUser,
     session: AsyncSession = Depends(get_session),
 ) -> SurveyDetail:
     try:
         survey = await surveys.get_by_id(session, survey_id)
+        check_survey_access(survey, user)
         await surveys.update_clinical_answers(session, survey, data)
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error

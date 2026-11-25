@@ -1,4 +1,4 @@
-export type UserRole = "doctor" | "patient";
+export type UserRole = "admin" | "doctor" | "patient";
 export type SurveyStatus = "pending" | "completed";
 export type SurveyKind = "baseline" | "followup";
 
@@ -84,6 +84,25 @@ export type PatientDetail = {
 export type PatientCredentials = { public_id: string; password: string };
 export type PatientCreated = { patient: PatientDetail; credentials: PatientCredentials };
 
+export type AdminUser = {
+  id: string;
+  public_id: string;
+  role: "doctor" | "patient";
+  created_at: string;
+  patient_id: string | null;
+};
+
+export type AdminStats = {
+  admin_count: number;
+  doctor_count: number;
+  patient_count: number;
+  attention_count: number;
+  pending_count: number;
+  completed_count: number;
+};
+
+export type DoctorInput = { public_id: string; password: string };
+
 export type QuestionOption = { value: number; label: string };
 export type SurveyQuestion = {
   key: string;
@@ -92,7 +111,7 @@ export type SurveyQuestion = {
   kind: "scale" | "choice" | "boolean" | "text";
   options: QuestionOption[];
   detail_label: string | null;
-  respondent: UserRole;
+  respondent: "doctor" | "patient";
   required: boolean;
 };
 

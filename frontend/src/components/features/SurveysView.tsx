@@ -27,7 +27,9 @@ export function SurveysView() {
             <Icon name="clipboard" />
           </span>
           <div>
-            <p className="text-2xl font-bold text-navy">{patients.isLoading ? "—" : pendingCount}</p>
+            <p className="text-2xl font-bold text-navy">
+              {patients.isLoading ? "—" : pendingCount}
+            </p>
             <p className="text-sm text-slate-500">Пациентов с ожидающей анкетой</p>
           </div>
         </div>

@@ -20,13 +20,25 @@ const patientNavigation: Array<{ label: string; icon: IconName; href: string }> 
   { label: "Мои опросы", icon: "clipboard", href: "/" },
   { label: "Динамика", icon: "chart", href: "/#dynamics" },
 ];
+const adminNavigation: Array<{ label: string; icon: IconName; href: string }> = [
+  { label: "Статистика", icon: "chart", href: "/" },
+  { label: "Врачи", icon: "heart", href: "/admin/doctors" },
+  { label: "Пациенты", icon: "users", href: "/admin/patients" },
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { mobileNavigationOpen, setMobileNavigationOpen } = useAppStore();
   const { user, clearAuth } = useAuthStore();
-  const navigation = user?.role === "patient" ? patientNavigation : doctorNavigation;
+  const navigation =
+    user?.role === "admin"
+      ? adminNavigation
+      : user?.role === "patient"
+        ? patientNavigation
+        : doctorNavigation;
+  const roleLabel =
+    user?.role === "admin" ? "Администратор" : user?.role === "patient" ? "Пациент" : "Врач";
 
   async function logout() {
     await api.logout().catch(() => undefined);
@@ -63,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav aria-label="Основная навигация" className="space-y-2">
           {navigation.map((item, index) => {
             const active =
-              user?.role === "doctor"
+              user?.role === "doctor" || user?.role === "admin"
                 ? item.href === "/"
                   ? pathname === "/"
                   : item.href === "/surveys"
@@ -94,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             Не передавайте свои учётные данные другим людям.
           </p>
         </div>
-        <p className="mt-5 px-2 text-[10px] text-blue-300">Версия 0.2 · Опросник 1.0</p>
+        <p className="mt-5 px-2 text-[10px] text-blue-300">Версия 0.3 · Опросник 1.0</p>
       </aside>
       <div className="lg:pl-64">
         <header className="flex h-20 items-center justify-between border-b border-slate-200/70 bg-white px-5 sm:px-8">
@@ -106,17 +118,24 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Icon name="menu" />
           </button>
           <div className="hidden text-sm text-slate-400 sm:block">
-            {user?.role === "patient" ? "Кабинет пациента" : "Кабинет врача"}
+            {user?.role === "admin"
+              ? "Панель администратора"
+              : user?.role === "patient"
+                ? "Кабинет пациента"
+                : "Кабинет врача"}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-              <Icon name={user?.role === "patient" ? "users" : "heart"} className="h-5 w-5" />
+              <Icon
+                name={
+                  user?.role === "admin" ? "settings" : user?.role === "patient" ? "users" : "heart"
+                }
+                className="h-5 w-5"
+              />
             </div>
             <div className="hidden sm:block">
               <p className="text-sm font-semibold">{user?.public_id}</p>
-              <p className="text-xs text-slate-400">
-                {user?.role === "patient" ? "Пациент" : "Врач"}
-              </p>
+              <p className="text-xs text-slate-400">{roleLabel}</p>
             </div>
             <Button variant="ghost" onClick={logout} className="ml-2 px-3">
               Выйти

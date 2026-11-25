@@ -149,3 +149,51 @@ async def test_followup_questionnaire(client: AsyncClient, doctor_headers: dict[
     assert response.status_code == 200, response.text
     own = (await client.get("/api/v1/patients/me", headers=headers)).json()
     assert own["trends"][-1]["weight_kg"] == 67
+
+
+async def test_doctors_can_access_only_their_own_patients(
+    client: AsyncClient,
+    doctor_headers: dict[str, str],
+    second_doctor_headers: dict[str, str],
+) -> None:
+    own = await create_patient(client, doctor_headers)
+    other = await create_patient(client, second_doctor_headers)
+    own_id = own["patient"]["id"]
+    other_id = other["patient"]["id"]
+    survey_id = own["patient"]["surveys"][0]["id"]
+
+    own_list = (await client.get("/api/v1/patients", headers=doctor_headers)).json()
+    other_list = (await client.get("/api/v1/patients", headers=second_doctor_headers)).json()
+    assert [patient["id"] for patient in own_list] == [own_id]
+    assert [patient["id"] for patient in other_list] == [other_id]
+    assert (
+        await client.get(
+            f"/api/v1/patients?search={own['patient']['public_id']}",
+            headers=second_doctor_headers,
+        )
+    ).json() == []
+
+    assert (await client.get(f"/api/v1/patients/{own_id}", headers=second_doctor_headers)).status_code == 404
+    assert (
+        await client.post(f"/api/v1/patients/{own_id}/password", headers=second_doctor_headers)
+    ).status_code == 404
+    assert (
+        await client.post(f"/api/v1/patients/{own_id}/surveys", headers=second_doctor_headers)
+    ).status_code == 404
+    assert (
+        await client.get(f"/api/v1/surveys/{survey_id}", headers=second_doctor_headers)
+    ).status_code == 404
+    assert (
+        await client.patch(
+            f"/api/v1/surveys/{survey_id}/clinical",
+            json={"answers": {"q32": 1}},
+            headers=second_doctor_headers,
+        )
+    ).status_code == 404
+
+    own_dashboard = (await client.get("/api/v1/dashboard", headers=doctor_headers)).json()
+    other_dashboard = (await client.get("/api/v1/dashboard", headers=second_doctor_headers)).json()
+    assert own_dashboard["patient_count"] == 1
+    assert own_dashboard["recent_patients"][0]["id"] == own_id
+    assert other_dashboard["patient_count"] == 1
+    assert other_dashboard["recent_patients"][0]["id"] == other_id

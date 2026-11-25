@@ -17,6 +17,9 @@ class AppConfig(_Section):
 
 class AuthConfig(_Section):
     session_ttl_hours: int = 24
+    admin_id: str = "A-000001"
+    admin_password: str = "admin-demo-password"
+    bootstrap_doctor_enabled: bool = True
     doctor_id: str = "D-000001"
     doctor_password: str = "doctor-demo-password"
 

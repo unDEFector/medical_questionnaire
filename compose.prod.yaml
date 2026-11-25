@@ -1,0 +1,41 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: ${DATABASE__DB_NAME:?Задайте DATABASE__DB_NAME в .env.production}
+      POSTGRES_USER: ${DATABASE__USER_NAME:?Задайте DATABASE__USER_NAME в .env.production}
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD:?Задайте DATABASE__PASSWORD в .env.production}
+
+  backend:
+    environment:
+      DATABASE__USER_NAME: ${DATABASE__USER_NAME:?Задайте DATABASE__USER_NAME в .env.production}
+      DATABASE__PASSWORD: ${DATABASE__PASSWORD:?Задайте DATABASE__PASSWORD в .env.production}
+      DATABASE__DB_NAME: ${DATABASE__DB_NAME:?Задайте DATABASE__DB_NAME в .env.production}
+      APP__ENVIRONMENT: production
+      APP__FRONTEND_URL: ${APP__FRONTEND_URL:?Задайте APP__FRONTEND_URL в .env.production}
+      APP__SEED_DEMO_DATA: "false"
+      AUTH__ADMIN_ID: ${AUTH__ADMIN_ID:-A-000001}
+      AUTH__ADMIN_PASSWORD: ${AUTH__ADMIN_PASSWORD:?Задайте AUTH__ADMIN_PASSWORD в .env.production}
+      AUTH__BOOTSTRAP_DOCTOR_ENABLED: "false"
+    ports: !reset []
+
+  frontend:
+    ports: !reset []
+
+  nginx:
+    image: nginx:1.28-alpine
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped

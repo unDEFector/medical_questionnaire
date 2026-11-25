@@ -2,7 +2,7 @@
 
 ## Обзор проекта
 
-`medical-questionnaire` (`инКлира`) — веб-приложение для первичного и контрольного медицинского опроса пациентов. Врач создаёт обезличенную карточку и учётные данные, пациент заполняет анкету в своём кабинете, врач видит ответы и red flags.
+`medical-questionnaire` (`инКлира`) — веб-приложение для первичного и контрольного медицинского опроса пациентов. Администратор управляет врачами и пациентами и видит статистику. Врач создаёт обезличенную карточку и учётные данные, пациент заполняет анкету в своём кабинете, врач видит ответы и red flags.
 
 - Версия: `0.1.0`.
 - Python `>=3.13`, менеджер зависимостей `uv`.
@@ -35,6 +35,9 @@
 │   ├── src/store/
 │   └── src/types/
 ├── compose.yaml
+├── compose.prod.yaml # Production-overlay с nginx и без внешних портов приложений
+├── nginx/            # Обратный прокси production
+├── deploy/           # Шаблон production-настроек без секретов
 ├── Dockerfile.backend
 ├── pyproject.toml
 └── uv.lock
@@ -52,7 +55,8 @@ docker compose up --build
 - Backend: `http://localhost:8000`, Swagger: `/docs`.
 - Демонстрационные вымышленные пациенты включаются переменной `APP__SEED_DEMO_DATA=true` (по умолчанию в Compose).
 - Backend использует вложенные настройки с разделителем `__`: секции `APP__*`, `AUTH__*`, `DATABASE__*`, `REDIS__*`. Лишние переменные окружения игнорируются.
-- Пароли хешируются Argon2; Bearer-токены хранятся в БД как SHA-256-хеши. Доступ проверяется зависимостями `backend/src/api/dependencies.py`: пациент может читать и отправлять только собственные анкеты, врач управляет карточками и дополнительными полями.
+- Пароли хешируются Argon2; Bearer-токены хранятся в БД как SHA-256-хеши. Доступ проверяется зависимостями `backend/src/api/dependencies.py`: пациент может читать и отправлять только собственные анкеты, врач управляет карточками и дополнительными полями, администратор управляет пользователями через `/api/v1/admin`.
+- Первичный администратор задаётся `AUTH__ADMIN_ID` и `AUTH__ADMIN_PASSWORD`. Создание первого врача отключается через `AUTH__BOOTSTRAP_DOCTOR_ENABLED=false`.
 - URL PostgreSQL собирается из `DATABASE__USER_NAME`, `DATABASE__PASSWORD`, `DATABASE__HOST`, `DATABASE__PORT`, `DATABASE__DB_NAME`; URL Redis — из `REDIS__HOST`, `REDIS__PORT`, `REDIS__DB`. Задавать готовые `DATABASE__URL` и `REDIS__URL` не требуется.
 - Шаблоны: `backend/.env.example`, `frontend/.env.example`. Локальные `.env` не коммитить.
 - При добавлении Python-зависимостей обновлять `pyproject.toml` и `uv.lock` через `uv`.
@@ -95,4 +99,4 @@ ESLint использует Babel-парсер Next.js без пресета `ty
 
 ## Развёртывание
 
-Контейнеры `postgres`, `redis`, `backend`, `frontend` описаны в `compose.yaml`. Данные БД и Redis находятся в именованных томах. Production-окружение, HTTPS, управление секретами и CI/CD пока не настроены; не выдумывать целевую платформу.
+Контейнеры `postgres`, `redis`, `backend`, `frontend` описаны в `compose.yaml`. Данные БД и Redis находятся в именованных томах. Тестовый production для Ubuntu 22.04 запускается через `compose.yaml` + `compose.prod.yaml`: nginx публикует только HTTP-порт, остальные сервисы остаются во внутренней сети. Шаблон — `deploy/production-settings.example`, локальный `.env.production` игнорируется Git. HTTPS, резервное копирование, аудит и CI/CD пока не настроены.

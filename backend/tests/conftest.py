@@ -45,3 +45,35 @@ async def doctor_headers(client: AsyncClient, doctor_credentials: dict[str, str]
     response = await client.post("/api/v1/auth/login", json=doctor_credentials)
     assert response.status_code == 200, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def second_doctor_credentials(session_factory):
+    credentials = {"public_id": "D-TEST02", "password": "second-doctor-test-password"}
+    async with session_factory() as session:
+        await create_user(session, credentials["public_id"], credentials["password"], UserRole.doctor)
+        await session.commit()
+    return credentials
+
+
+@pytest_asyncio.fixture
+async def second_doctor_headers(client: AsyncClient, second_doctor_credentials: dict[str, str]):
+    response = await client.post("/api/v1/auth/login", json=second_doctor_credentials)
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def admin_credentials(session_factory):
+    credentials = {"public_id": "A-TEST01", "password": "admin-test-password"}
+    async with session_factory() as session:
+        await create_user(session, credentials["public_id"], credentials["password"], UserRole.admin)
+        await session.commit()
+    return credentials
+
+
+@pytest_asyncio.fixture
+async def admin_headers(client: AsyncClient, admin_credentials: dict[str, str]):
+    response = await client.post("/api/v1/auth/login", json=admin_credentials)
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}

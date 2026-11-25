@@ -59,25 +59,34 @@ def patient_detail(patient: Patient) -> PatientDetail:
     )
 
 
-async def list_patients(session: AsyncSession, search: str | None = None) -> list[Patient]:
+async def list_patients(
+    session: AsyncSession, search: str | None = None, doctor_id: uuid.UUID | None = None
+) -> list[Patient]:
     query = (
         select(Patient)
         .join(Patient.user)
         .options(selectinload(Patient.user), selectinload(Patient.surveys).selectinload(Survey.answers))
         .order_by(Patient.created_at.desc())
     )
+    if doctor_id is not None:
+        query = query.where(Patient.doctor_id == doctor_id)
     if search:
         query = query.where(User.public_id.ilike(f"%{search.strip()}%"))
     result = await session.scalars(query)
     return list(result)
 
 
-async def get_patient(session: AsyncSession, patient_id: uuid.UUID) -> Patient:
-    result = await session.scalar(
+async def get_patient(
+    session: AsyncSession, patient_id: uuid.UUID, doctor_id: uuid.UUID | None = None
+) -> Patient:
+    query = (
         select(Patient)
         .where(Patient.id == patient_id)
         .options(selectinload(Patient.user), selectinload(Patient.surveys).selectinload(Survey.answers))
     )
+    if doctor_id is not None:
+        query = query.where(Patient.doctor_id == doctor_id)
+    result = await session.scalar(query)
     if result is None:
         raise LookupError("Пациент не найден")
     return result
@@ -91,11 +100,17 @@ async def new_patient_public_id(session: AsyncSession) -> str:
     raise RuntimeError("Не удалось выделить ID пациента")
 
 
-async def create_patient(session: AsyncSession, data: PatientCreate) -> tuple[Patient, PatientCredentials]:
+async def create_patient(
+    session: AsyncSession, data: PatientCreate, doctor: User | None = None
+) -> tuple[Patient, PatientCredentials]:
     password = secrets.token_urlsafe(9)
     public_id = await new_patient_public_id(session)
     user = await create_user(session, public_id, password, UserRole.patient)
-    patient = Patient(user_id=user.id, **data.model_dump())
+    patient = Patient(
+        user_id=user.id,
+        doctor_id=doctor.id if doctor is not None else None,
+        **data.model_dump(),
+    )
     patient.surveys.append(Survey(kind=SurveyKind.baseline, due_date=datetime.now(UTC)))
     session.add(patient)
     await session.flush()

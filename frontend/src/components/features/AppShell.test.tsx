@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
-describe("AppShell doctor navigation", () => {
+describe("AppShell navigation", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
@@ -42,5 +42,22 @@ describe("AppShell doctor navigation", () => {
     render(<AppShell>Содержимое</AppShell>);
 
     expect(screen.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("shows separate administrator sections", () => {
+    useAuthStore.setState({
+      token: "admin-token",
+      user: { public_id: "A-000001", role: "admin", patient_id: null },
+    });
+    render(<AppShell>Содержимое</AppShell>);
+
+    expect(screen.getByRole("link", { name: "Статистика" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Врачи" })).toHaveAttribute("href", "/admin/doctors");
+    expect(screen.getByRole("link", { name: "Пациенты" })).toHaveAttribute(
+      "href",
+      "/admin/patients",
+    );
+    expect(screen.getByText("Панель администратора")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Опросник" })).not.toBeInTheDocument();
   });
 });

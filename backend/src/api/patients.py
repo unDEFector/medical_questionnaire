@@ -14,21 +14,21 @@ router = APIRouter(prefix="/patients", tags=["Пациенты"])
 
 @router.get("", response_model=list[PatientListItem])
 async def read_patients(
-    _: DoctorUser,
+    user: DoctorUser,
     search: str | None = Query(default=None, max_length=20),
     session: AsyncSession = Depends(get_session),
 ) -> list[PatientListItem]:
-    items = await patients.list_patients(session, search)
+    items = await patients.list_patients(session, search, doctor_id=user.id)
     return [patients.patient_list_item(patient) for patient in items]
 
 
 @router.post("", response_model=PatientCreated, status_code=status.HTTP_201_CREATED)
 async def add_patient(
     data: PatientCreate,
-    _: DoctorUser,
+    user: DoctorUser,
     session: AsyncSession = Depends(get_session),
 ) -> PatientCreated:
-    patient, credentials = await patients.create_patient(session, data)
+    patient, credentials = await patients.create_patient(session, data, doctor=user)
     await session.commit()
     await invalidate_dashboard()
     detail = await patients.get_patient(session, patient.id)
@@ -52,7 +52,7 @@ async def read_patient(
     session: AsyncSession = Depends(get_session),
 ) -> PatientDetail:
     try:
-        patient = await patients.get_patient(session, patient_id)
+        patient = await patients.get_patient(session, patient_id, doctor_id=user.id)
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     return patients.patient_detail(patient)
@@ -61,11 +61,11 @@ async def read_patient(
 @router.post("/{patient_id}/password", response_model=PatientCredentials)
 async def reset_password(
     patient_id: uuid.UUID,
-    _: DoctorUser,
+    user: DoctorUser,
     session: AsyncSession = Depends(get_session),
 ) -> PatientCredentials:
     try:
-        patient = await patients.get_patient(session, patient_id)
+        patient = await patients.get_patient(session, patient_id, doctor_id=user.id)
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     credentials = await patients.reset_patient_password(session, patient)
@@ -76,11 +76,11 @@ async def reset_password(
 @router.post("/{patient_id}/surveys", response_model=SurveyRead, status_code=status.HTTP_201_CREATED)
 async def add_followup(
     patient_id: uuid.UUID,
-    _: DoctorUser,
+    user: DoctorUser,
     session: AsyncSession = Depends(get_session),
 ) -> SurveyRead:
     try:
-        patient = await patients.get_patient(session, patient_id)
+        patient = await patients.get_patient(session, patient_id, doctor_id=user.id)
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     survey = await patients.create_followup(session, patient)

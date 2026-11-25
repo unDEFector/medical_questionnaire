@@ -27,6 +27,12 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+async def require_admin(user: CurrentUser) -> User:
+    if user.role != UserRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступно только администратору")
+    return user
+
+
 async def require_doctor(user: CurrentUser) -> User:
     if user.role != UserRole.doctor:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступно только врачу")
@@ -39,5 +45,6 @@ async def require_patient(user: CurrentUser) -> User:
     return user
 
 
+AdminUser = Annotated[User, Depends(require_admin)]
 DoctorUser = Annotated[User, Depends(require_doctor)]
 PatientUser = Annotated[User, Depends(require_patient)]

@@ -76,7 +76,16 @@ async def revoke_session(session: AsyncSession, token: str) -> None:
     await session.execute(delete(AuthSession).where(AuthSession.token_hash == token_digest(token)))
 
 
+async def ensure_bootstrap_admin(session: AsyncSession) -> None:
+    public_id = config.auth.admin_id.strip().upper()
+    admin = await session.scalar(select(User).where(User.public_id == public_id))
+    if admin is None:
+        await create_user(session, public_id, config.auth.admin_password, UserRole.admin)
+
+
 async def ensure_bootstrap_doctor(session: AsyncSession) -> None:
+    if not config.auth.bootstrap_doctor_enabled:
+        return
     public_id = config.auth.doctor_id.strip().upper()
     doctor = await session.scalar(select(User).where(User.public_id == public_id))
     if doctor is None:

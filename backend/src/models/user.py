@@ -9,6 +9,7 @@ from src.db.base import Base
 
 
 class UserRole(enum.StrEnum):
+    admin = "admin"
     doctor = "doctor"
     patient = "patient"
 
@@ -22,7 +23,15 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    patient: Mapped["Patient | None"] = relationship(back_populates="user", uselist=False)
+    patient: Mapped["Patient | None"] = relationship(
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        foreign_keys="Patient.user_id",
+    )
+    patients: Mapped[list["Patient"]] = relationship(
+        back_populates="doctor", foreign_keys="Patient.doctor_id"
+    )
     auth_sessions: Mapped[list["AuthSession"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",

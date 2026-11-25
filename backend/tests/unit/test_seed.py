@@ -34,3 +34,22 @@ async def test_seed_adds_missing_demo_patients_without_resetting_existing_passwo
 
     async with session_factory() as session:
         assert await session.scalar(select(func.count(Patient.id))) == 3
+
+
+async def test_seed_assigns_demo_patients_to_bootstrap_doctor(session_factory, monkeypatch) -> None:
+    monkeypatch.setattr(seed, "SessionFactory", session_factory)
+    async with session_factory() as session:
+        doctor = await create_user(
+            session,
+            seed.config.auth.doctor_id,
+            "doctor-test-password",
+            UserRole.doctor,
+        )
+        await session.commit()
+
+    await seed.seed_demo_data()
+
+    async with session_factory() as session:
+        patients = list(await session.scalars(select(Patient)))
+        assert len(patients) == 3
+        assert {patient.doctor_id for patient in patients} == {doctor.id}

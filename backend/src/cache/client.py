@@ -21,6 +21,8 @@ async def set_cached(key: str, value: str, ttl_seconds: int = 60) -> None:
 
 async def invalidate_dashboard() -> None:
     try:
-        await redis_client.delete("dashboard")
+        keys = [key async for key in redis_client.scan_iter(match="dashboard:*")]
+        if keys:
+            await redis_client.delete(*keys)
     except RedisError:
         pass

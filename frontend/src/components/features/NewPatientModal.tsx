@@ -17,23 +17,26 @@ const initialForm: PatientInput = {
   starting_dose: 0.5,
 };
 
-export function NewPatientModal() {
+export function NewPatientModal({ admin = false }: { admin?: boolean }) {
   const { patientModalOpen, setPatientModalOpen } = useAppStore();
   const [form, setForm] = useState<PatientInput>(initialForm);
   const [created, setCreated] = useState<PatientCreated | null>(null);
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (data: PatientInput) =>
-      api.createPatient({
+    mutationFn: (data: PatientInput) => {
+      const payload = {
         ...data,
         first_dose_date: data.first_dose_date || undefined,
         starting_dose: data.starting_dose || undefined,
-      }),
+      };
+      return admin ? api.createAdminPatient(payload) : api.createPatient(payload);
+    },
     onSuccess: async (data) => {
       setCreated(data);
       await queryClient.invalidateQueries({ queryKey: ["patients"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
   });
 

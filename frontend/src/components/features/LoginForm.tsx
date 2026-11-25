@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
@@ -10,12 +10,14 @@ import { Icon } from "@/components/ui/Icon";
 
 export function LoginForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [publicId, setPublicId] = useState("");
   const [password, setPassword] = useState("");
   const login = useMutation({
     mutationFn: () => api.login({ public_id: publicId, password }),
     onSuccess: (response) => {
+      queryClient.clear();
       setAuth(response);
       router.replace("/");
     },
@@ -52,7 +54,7 @@ export function LoginForm() {
               autoCapitalize="characters"
               required
               maxLength={20}
-              placeholder="D-000001 или P-100001"
+              placeholder="A-000001, D-000001 или P-100001"
               value={publicId}
               onChange={(event) => setPublicId(event.target.value.toUpperCase())}
             />
@@ -83,7 +85,7 @@ export function LoginForm() {
             {!login.isPending && <Icon name="arrow-right" className="h-4 w-4" />}
           </Button>
           <p className="mt-5 text-center text-xs leading-5 text-slate-400">
-            Врач и пациент входят через одну форму. Роль определяется автоматически.
+            Администратор, врач и пациент входят через одну форму. Роль определяется автоматически.
           </p>
         </form>
       </div>
